@@ -1,0 +1,58 @@
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: pandafree-nginx
+    environment:
+      - SSL_ENABLED=${SSL_ENABLED:-true}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - go2rtc
+    restart: unless-stopped
+    networks:
+      - pandafree
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pandafree-backend
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET:-change-this-secret-please}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
+      - PORT=3000
+      - GO2RTC_URL=http://go2rtc:1984
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    networks:
+      - pandafree
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  go2rtc:
+    image: alexxit/go2rtc:latest
+    container_name: pandafree-go2rtc
+    restart: unless-stopped
+    volumes:
+      - ./go2rtc:/config
+    environment:
+      - GO2RTC_CONFIG=/config/go2rtc.yml
+    networks:
+      - pandafree
+    ports:
+      - "1984:1984"   # go2rtc REST API / WebRTC
+      - "8554:8554"   # RTSP server
+      - "8555:8555/udp"  # WebRTC SRTP
+
+networks:
+  pandafree:
+    driver: bridge

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="PandaFree — Self-hosted Bambu Labs 3D printer control dashboard" />
+  <meta name="theme-color" content="#0d1117" />
+  <title>PandaFree</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- App Shell -->
+  <div id="app">
+    <!-- Login View -->
+    <div id="view-login" class="view" hidden>
+      <div class="login-bg">
+        <div class="login-card glass-card">
+          <div class="login-logo">
+            <div class="logo-icon">🐼</div>
+            <h1 class="login-title">PandaFree</h1>
+            <p class="login-sub">Bambu Printer Dashboard</p>
+          </div>
+          <form id="login-form">
+            <div class="field-group">
+              <label for="login-username">Username</label>
+              <input id="login-username" type="text" autocomplete="username" placeholder="admin" required />
+            </div>
+            <div class="field-group">
+              <label for="login-password">Password</label>
+              <input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••" required />
+            </div>
+            <div id="login-error" class="alert alert-error" hidden></div>
+            <button class="btn btn-primary btn-full" type="submit" id="login-btn">
+              <span id="login-btn-text">Sign In</span>
+              <span id="login-spinner" class="spinner" hidden></span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main App (after login) -->
+    <div id="view-app" class="view" hidden>
+      <!-- Sidebar Navigation -->
+      <nav id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo-sm">🐼</div>
+          <span class="logo-text">PandaFree</span>
+        </div>
+        <ul class="nav-list">
+          <li><a href="#dashboard" class="nav-link" id="nav-dashboard" data-view="dashboard">
+            <span class="nav-icon">⊞</span> <span class="nav-label">Dashboard</span>
+          </a></li>
+          <li><a href="#cameras" class="nav-link" id="nav-cameras" data-view="cameras">
+            <span class="nav-icon">📷</span> <span class="nav-label">Cameras</span>
+          </a></li>
+          <li><a href="#account" class="nav-link" id="nav-account" data-view="account">
+            <span class="nav-icon">👤</span> <span class="nav-label">Account</span>
+          </a></li>
+          <li><a href="#settings" class="nav-link" id="nav-settings" data-view="settings">
+            <span class="nav-icon">⚙</span> <span class="nav-label">Settings</span>
+          </a></li>
+        </ul>
+        <div class="sidebar-footer">
+          <div class="conn-status">
+            <span id="ws-dot" class="status-dot dot-offline"></span>
+            <span id="ws-label">Connecting…</span>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="logout-btn">Sign Out</button>
+        </div>
+      </nav>
+
+      <!-- Mobile top bar -->
+      <header class="topbar">
+        <button id="menu-toggle" class="btn btn-ghost btn-icon" aria-label="Menu">☰</button>
+        <span class="topbar-title">🐼 PandaFree</span>
+        <span id="ws-dot-mobile" class="status-dot dot-offline"></span>
+      </header>
+
+      <!-- Main Content Area -->
+      <main id="main-content" class="main-content">
+        <!-- Dashboard View -->
+        <section id="section-dashboard" class="section">
+          <div class="section-header">
+            <h2>Dashboard</h2>
+            <span id="printer-count" class="badge">0 printers</span>
+          </div>
+          <div id="dashboard-grid" class="printer-grid">
+            <div id="no-printers-msg" class="empty-state">
+              <div class="empty-icon">🖨️</div>
+              <h3>No printers configured</h3>
+              <p>Go to <strong>Settings</strong> to add your Bambu Labs printer.</p>
+              <a href="#settings" class="btn btn-primary">Add Printer</a>
+            </div>
+          </div>
+        </section>
+
+        <!-- Printer Detail View -->
+        <section id="section-printer" class="section" hidden>
+          <div class="section-header">
+            <button class="btn btn-ghost btn-icon back-btn" id="printer-back-btn">← Back</button>
+            <h2 id="printer-detail-name">Printer</h2>
+            <span id="printer-detail-badge" class="status-badge"></span>
+          </div>
+          <div id="printer-detail-content"></div>
+        </section>
+
+        <!-- Cameras View -->
+        <section id="section-cameras" class="section" hidden>
+          <div class="section-header">
+            <h2>Cameras</h2>
+            <button class="btn btn-primary btn-sm" id="add-camera-btn">+ Add Camera</button>
+          </div>
+          <div id="cameras-grid" class="cameras-grid"></div>
+        </section>
+
+        <!-- Account View -->
+        <section id="section-account" class="section" hidden>
+          <div class="section-header">
+            <h2>Account</h2>
+          </div>
+          <div id="account-content"></div>
+        </section>
+
+        <!-- Settings View -->
+        <section id="section-settings" class="section" hidden>
+          <div class="section-header">
+            <h2>Settings</h2>
+          </div>
+          <div id="settings-content"></div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Global overlay / modal -->
+    <div id="modal-overlay" class="modal-overlay" hidden>
+      <div id="modal-box" class="modal-box glass-card"></div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toast-container" class="toast-container"></div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/ws.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/views/login.js"></script>
+  <script src="js/views/dashboard.js"></script>
+  <script src="js/views/printer.js"></script>
+  <script src="js/views/cameras.js"></script>
+  <script src="js/views/account.js"></script>
+  <script src="js/views/settings.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

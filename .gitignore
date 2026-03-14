@@ -1,0 +1,6 @@
+.env
+data/
+ssl/
+node_modules/
+*.log
+.claude/
