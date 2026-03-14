@@ -19,8 +19,9 @@ Self-hosted, fully local Bambu Labs 3D printer control dashboard. Runs in Docker
 ### 1. Copy and configure environment
 ```bash
 cp .env.example .env
-# Edit .env and set your JWT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD
 ```
+
+Edit `.env` with your values — see the [Environment Variables](#environment-variables) section below for a full description of each option.
 
 ### 2. Generate SSL certificate (first time only)
 ```bash
@@ -70,11 +71,22 @@ nginx (HTTPS :443)
 - `./ssl/` — SSL certificates
 - `./go2rtc/` — go2rtc config
 
+## Environment Variables
+
+Copy `.env.example` to `.env` and set the following:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `JWT_SECRET` | *(required)* | Secret key used to sign login tokens. Use a long random string — e.g. `openssl rand -hex 32`. **Change this before exposing the dashboard to any network.** |
+| `ADMIN_USERNAME` | `admin` | Username for the built-in admin account. |
+| `ADMIN_PASSWORD` | `changeme` | Password for the built-in admin account. **Change this.** |
+| `SSL_ENABLED` | `true` | `true` — nginx terminates TLS using the certs in `./ssl/` (recommended). `false` — nginx serves plain HTTP on port 80 only; use this when PandaFree sits behind an upstream reverse proxy (e.g. Traefik, Caddy, NGINX Proxy Manager) that already handles SSL. |
+
 ## Ports Used
 | Port | Service |
 |------|---------|
-| 80   | HTTP (redirects to HTTPS) |
-| 443  | HTTPS (dashboard) |
+| 80   | HTTP (redirects to HTTPS, or dashboard when `SSL_ENABLED=false`) |
+| 443  | HTTPS (dashboard, only when `SSL_ENABLED=true`) |
 | 1984 | go2rtc WebRTC API |
 | 8554 | RTSP server |
 | 8555/udp | WebRTC SRTP |
