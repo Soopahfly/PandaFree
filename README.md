@@ -16,12 +16,31 @@ Self-hosted, fully local Bambu Labs 3D printer control dashboard. Runs in Docker
 
 ## Quick Start
 
-### 1. Copy and configure environment
+### Option A — Pre-built images (recommended)
+
+No cloning or building required. Download the release compose file and go:
+
 ```bash
+curl -O https://github.com/Soopahfly/PandaFree/releases/latest/download/docker-compose.release.yml
+curl -O https://raw.githubusercontent.com/Soopahfly/PandaFree/main/.env.example
 cp .env.example .env
+# Edit .env — at minimum set JWT_SECRET and change the admin password
 ```
 
-Edit `.env` with your values — see the [Environment Variables](#environment-variables) section below for a full description of each option.
+Then follow steps 2–4 below (SSL cert generation and startup).
+
+### Option B — Build from source
+
+```bash
+git clone https://github.com/Soopahfly/PandaFree.git
+cd PandaFree
+cp .env.example .env
+# Edit .env — at minimum set JWT_SECRET and change the admin password
+```
+
+Then follow steps 2–4 below. Start with `docker compose up -d` (uses `docker-compose.yml`).
+
+---
 
 ### 2. Generate SSL certificate (first time only)
 ```bash
@@ -36,8 +55,14 @@ openssl req -x509 -nodes -days 3650 -newkey rsa:2048 `
   -addext "subjectAltName=IP:127.0.0.1,DNS:localhost"
 ```
 
+> Skip this step if `SSL_ENABLED=false` (reverse proxy mode).
+
 ### 3. Start the stack
 ```bash
+# Pre-built images (Option A):
+docker compose -f docker-compose.release.yml up -d
+
+# Built from source (Option B):
 docker compose up -d
 ```
 
@@ -50,13 +75,23 @@ Default login: `admin` / `changeme` (set in `.env`)
 1. Go to **Settings** → **Add Printer**
 2. Enter:
    - **IP Address** — shown on printer screen under Network
-   - **Serial Number** — shown under Settings → Device  
+   - **Serial Number** — shown under Settings → Device
    - **Access Code** — shown under Settings → Network → LAN
 3. The printer will connect automatically via MQTT over TLS
 
 ## Camera Setup
 - **Bambu built-in camera**: Settings → click "📷 Camera" next to your printer
 - **External RTSP camera**: Cameras tab → Add Camera → enter RTSP URL
+
+## Updating
+
+```bash
+# Pull the latest images and restart
+docker compose -f docker-compose.release.yml pull
+docker compose -f docker-compose.release.yml up -d
+```
+
+Your data (`./data/`, `./ssl/`, `./go2rtc/`) is stored in local volumes and will not be affected by an update.
 
 ## Architecture
 ```
@@ -90,3 +125,29 @@ Copy `.env.example` to `.env` and set the following:
 | 1984 | go2rtc WebRTC API |
 | 8554 | RTSP server |
 | 8555/udp | WebRTC SRTP |
+
+## Troubleshooting
+
+**Browser shows SSL warning on first load**
+This is expected with a self-signed certificate. Click "Advanced" → "Proceed" (Chrome) or "Accept the Risk" (Firefox). You only need to do this once per browser.
+
+**Printer shows as offline / won't connect**
+- Confirm **LAN Only Mode** and **Developer Mode** are both enabled on the printer
+- Verify the IP address, serial number, and access code are entered correctly
+- Make sure the machine running Docker is on the same local network as the printer
+- Check the backend logs: `docker compose logs backend`
+
+**Camera feed not loading**
+- Confirm the RTSP URL is reachable from the Docker host (test with VLC or `ffprobe`)
+- Check go2rtc logs: `docker compose logs go2rtc`
+- WebRTC requires ports 8554 (RTSP) and 8555/udp (SRTP) to be accessible
+
+**Port conflict on startup**
+- Ports 80, 443, 1984, 8554, or 8555 may already be in use. Stop the conflicting service or edit the port mappings in your compose file.
+
+**Forgot admin password**
+Delete `./data/pandafree.db` and restart the stack. The database will be recreated using the credentials in your `.env` file. **This will remove all printers and cameras.**
+
+## License
+
+MIT — see [LICENSE](LICENSE)
